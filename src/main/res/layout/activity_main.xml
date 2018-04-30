@@ -11,9 +11,44 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <Button
-        android:id="@+id/resize_button"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/resize"/>
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="50dp">
+
+        <TextView
+            android:id="@+id/resize_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/button_bg"
+            android:padding="12dp"
+            android:text="@string/resize"
+            android:textColor="@color/button_text"/>
+
+        <View
+            android:layout_width="30dp"
+            android:layout_height="0dp"/>
+
+        <TextView
+            android:id="@+id/full_screen_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/button_bg"
+            android:padding="12dp"
+            android:text="@string/full_screen"
+            android:textColor="@color/button_text"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/app_version"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="20dp"
+        android:layout_marginEnd="20dp"
+        android:shadowColor="#000"
+        android:shadowRadius="2"
+        android:textColor="#fafafa"/>
+
 </FrameLayout>

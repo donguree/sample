@@ -3,9 +3,11 @@ package com.tvstorm.sample;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Rect;
 import android.media.tv.TvContract;
 import android.media.tv.TvView;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -14,7 +16,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
 
@@ -37,14 +39,23 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         mTvView = findViewById(R.id.tv_view);
-        Button button1 = findViewById(R.id.resize_button);
-        button1.setOnClickListener(new View.OnClickListener() {
+        View resizeButton = findViewById(R.id.resize_button);
+        resizeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW,
-                        new Rect(96, 54, 960, 540));
+                        new Rect(480, 270, 1440, 810));
             }
         });
+        View fullScreenButton = findViewById(R.id.full_screen_button);
+        fullScreenButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, null);
+            }
+        });
+        TextView versionTextView = findViewById(R.id.app_version);
+        versionTextView.setText(BuildConfig.VERSION_NAME);
 
         mHandler = new MessageHandler(this);
         mInputId = TvContract.buildInputId(
@@ -62,7 +73,7 @@ public class MainActivity extends Activity {
         super.onStart();
         Log.v(TAG, "onStart()");
         mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, null);
-        mTvView.tune(mInputId, TvContract.buildChannelUri(1L));
+        mTvView.tune(mInputId, TvContract.buildChannelUri(getFirstChannelId()));
     }
 
     @Override
@@ -109,14 +120,36 @@ public class MainActivity extends Activity {
         mTvView.setLayoutParams(params);
     }
 
+    private long getFirstChannelId() {
+        Uri uri = TvContract.buildChannelsUriForInput(mInputId);
+        Log.d(TAG, uri.toString());
+        String[] projection = {TvContract.Channels._ID};
+
+        try (Cursor cursor = getContentResolver()
+                .query(uri, projection, null, null, null)) {
+            if (cursor == null) {
+                Log.w(TAG, "Failed to get first channel ID (null Cursor)");
+                return 0L;
+            }
+
+            if (cursor.moveToNext()) {
+                long channelId = cursor.getLong(0);
+                Log.d(TAG, "Channel ID: " + channelId);
+                return channelId;
+            }
+        }
+
+        return 0L;
+    }
+
     private static class MessageHandler extends Handler {
 
         private static final int RESIZE_TV_VIEW = 1;
 
         private final WeakReference<MainActivity> mWeakReference;
 
-        MessageHandler(@NonNull MainActivity fragment) {
-            mWeakReference = new WeakReference<>(fragment);
+        MessageHandler(@NonNull MainActivity mainActivity) {
+            mWeakReference = new WeakReference<>(mainActivity);
         }
 
         @Override

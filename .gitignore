@@ -17,6 +17,9 @@ local.properties
 .idea/
 *.iml
 
+# Release keys
+keys/*
+
 # OS-specific files
 .DS_Store
 .DS_Store?
