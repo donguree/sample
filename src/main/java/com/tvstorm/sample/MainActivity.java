@@ -103,6 +103,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         Log.v(TAG, "onStop()");
+        mTvView.reset();
         super.onStop();
     }
 
@@ -127,7 +128,7 @@ public class MainActivity extends Activity {
             mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, rect);
         } else {
             synchronized (mLock) {
-                Log.d(TAG, "Pending resize TV view...");
+                Log.w(TAG, "Pending resize TV view...");
                 mPendingTvViewSizeRect = rect;
             }
         }
