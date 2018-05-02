@@ -2,7 +2,6 @@ package com.tvstorm.sample;
 
 import android.app.Activity;
 import android.content.ComponentName;
-import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Rect;
 import android.media.tv.TvContract;
@@ -51,7 +50,14 @@ public class MainActivity extends Activity {
             Log.v(TAG, "onPlayerStatusChanged(...)  " + playerType + "  " + playerState);
             if (playerType == PlayerType.LIVE) {
                 mPlayerState = playerState;
-                if (playerState.equals(PlayerState.PREPARED) && mPendingTvViewSizeRect != null) {
+                Log.d(TAG, "mPendingTvViewSizeRect=" + mPendingTvViewSizeRect);
+                if (mPendingTvViewSizeRect != null &&
+                        playerState.equals(
+                                PlayerState.PREPARED,
+                                PlayerState.STARTED,
+                                PlayerState.STOPPED,
+                                PlayerState.PAUSED,
+                                PlayerState.PLAYBACK_COMPLETED)) {
                     synchronized (mLock) {
                         mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, mPendingTvViewSizeRect);
                         mPendingTvViewSizeRect = null;
@@ -110,16 +116,19 @@ public class MainActivity extends Activity {
     }
 
     private void resizeTvView(@Nullable Rect rect) {
-        Log.v(TAG, "resizeVideoInternal(...)  " + rect);
-        if (mPlayerState != null && mPlayerState.equals(
+        Log.v(TAG, "resizeTvView(...)  " + rect);
+        mPlayerState = PlayerService.getInstance().getPlayerState(PlayerType.LIVE);
+        if (mPlayerState.equals(
                 PlayerState.PREPARED,
                 PlayerState.STARTED,
                 PlayerState.STOPPED,
                 PlayerState.PAUSED,
                 PlayerState.PLAYBACK_COMPLETED)) {
+            Log.d(TAG, "Requesting resize TV view...");
             mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, rect);
         } else {
             synchronized (mLock) {
+                Log.d(TAG, "Pending resize TV view...");
                 mPendingTvViewSizeRect = rect;
             }
         }
