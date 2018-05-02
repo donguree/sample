@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -83,7 +82,7 @@ public class MainActivity extends Activity {
         resizeButton.setOnClickListener(v -> resizeTvView(new Rect(480, 270, 1440, 810)));
 
         View fullScreenButton = findViewById(R.id.full_screen_button);
-        fullScreenButton.setOnClickListener(v -> resizeTvView(null));
+        fullScreenButton.setOnClickListener(v -> resizeTvView(new Rect(0, 0, 1920, 1080)));
 
         TextView versionTextView = findViewById(R.id.app_version);
         versionTextView.setText(BuildConfig.VERSION_NAME);
@@ -97,7 +96,7 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         Log.v(TAG, "onStart()");
-        resizeTvView(null); // full screen
+        resizeTvView(new Rect(0, 0, 1920, 1080)); // full screen
         mTvView.tune(mInputId, TvContract.buildChannelUri(getFirstChannelId()));
     }
 
@@ -115,7 +114,7 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
-    private void resizeTvView(@Nullable Rect rect) {
+    private void resizeTvView(@NonNull Rect rect) {
         Log.v(TAG, "resizeTvView(...)  " + rect);
         mPlayerState = PlayerService.getInstance().getPlayerState(PlayerType.LIVE);
         if (mPlayerState.equals(
@@ -134,40 +133,16 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void resizeTvViewInternal(@Nullable Rect rect) {
+    private void resizeTvViewInternal(@NonNull Rect rect) {
         Log.v(TAG, "resizeVideoInternal(...)  " + rect);
 
-        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) mTvView.getLayoutParams();
+        ViewGroup.MarginLayoutParams params =
+                (ViewGroup.MarginLayoutParams) mTvView.getLayoutParams();
 
-        Log.d(TAG, "Current TV view size: "
-                + "(" + params.leftMargin + "," + params.topMargin + ") "
-                + params.width + "x" + params.height);
-
-        final int leftMargin;
-        final int topMargin;
-        final int width;
-        final int height;
-
-        if (rect == null) {
-            Log.d(TAG, "Full screen");
-            leftMargin = 0;
-            topMargin = 0;
-            width = ViewGroup.LayoutParams.MATCH_PARENT;
-            height = ViewGroup.LayoutParams.MATCH_PARENT;
-        } else {
-            width = rect.right - rect.left;
-            height = rect.bottom - rect.top;
-            Log.d(TAG, "New TV view size: "
-                    + "(" + rect.left + "," + rect.top + ") "
-                    + width + "x" + height);
-            leftMargin = rect.left;
-            topMargin = rect.top;
-        }
-
-        params.leftMargin = leftMargin;
-        params.topMargin = topMargin;
-        params.width = width;
-        params.height = height;
+        params.leftMargin = rect.left;
+        params.topMargin = rect.top;
+        params.width = rect.right - rect.left;;
+        params.height = rect.bottom - rect.top;;
 
         mTvView.setLayoutParams(params);
     }
