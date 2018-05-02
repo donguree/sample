@@ -6,6 +6,8 @@
     <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA"/>
     <uses-permission android:name="com.android.providers.tv.permission.ACCESS_ALL_EPG_DATA"/>
 
+    <uses-permission android:name="tvstorm.permission.PLAYER_SERVICE"/>
+
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false"/>
@@ -22,6 +24,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <!--<uses-library android:name="tvcontextmanager"/>-->
+
         <activity
             android:name=".MainActivity"
             android:banner="@drawable/app_icon_your_company"
@@ -38,5 +43,9 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="c86bc13563781be0e5565c972b19f5388bc1ca62"/>
     </application>
 </manifest>

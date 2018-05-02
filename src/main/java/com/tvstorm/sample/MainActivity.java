@@ -18,6 +18,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.tvstorm.common.player.PlayerService;
+import com.tvstorm.common.player.PlayerServiceAdapter;
+import com.tvstorm.common.player.PlayerServiceListener;
+import com.tvstorm.common.player.PlayerState;
+import com.tvstorm.common.player.PlayerType;
+
 import java.lang.ref.WeakReference;
 
 public class MainActivity extends Activity {
@@ -27,33 +33,52 @@ public class MainActivity extends Activity {
     private static final String SERVICE_MANAGER = "com.tvstorm.service.trv";
     private static final String TVS_INPUT_SERVICE = "com.tvstorm.service.tif.TvsInputService";
 
+    private final Object mLock = new Object();
+
     private TvView mTvView;
 
     private String mInputId;
 
     private MessageHandler mHandler;
 
+    private PlayerState mPlayerState;
+    private Rect mPendingTvViewSizeRect;
+
+    private PlayerServiceListener mPlayerServiceListener = new PlayerServiceAdapter() {
+        @Override
+        public void onPlayerStatusChanged(
+                @NonNull PlayerType playerType, @NonNull PlayerState playerState) {
+            Log.v(TAG, "onPlayerStatusChanged(...)  " + playerType + "  " + playerState);
+            if (playerType == PlayerType.LIVE) {
+                mPlayerState = playerState;
+                if (playerState.equals(PlayerState.PREPARED) && mPendingTvViewSizeRect != null) {
+                    synchronized (mLock) {
+                        mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, mPendingTvViewSizeRect);
+                        mPendingTvViewSizeRect = null;
+                    }
+                }
+            }
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.v(TAG, "onCreate()");
+
+        PlayerService.getInstance().init(this);
+        PlayerService.getInstance().addListener(mPlayerServiceListener);
+
         setContentView(R.layout.activity_main);
 
         mTvView = findViewById(R.id.tv_view);
+
         View resizeButton = findViewById(R.id.resize_button);
-        resizeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW,
-                        new Rect(480, 270, 1440, 810));
-            }
-        });
+        resizeButton.setOnClickListener(v -> resizeTvView(new Rect(480, 270, 1440, 810)));
+
         View fullScreenButton = findViewById(R.id.full_screen_button);
-        fullScreenButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, null);
-            }
-        });
+        fullScreenButton.setOnClickListener(v -> resizeTvView(null));
+
         TextView versionTextView = findViewById(R.id.app_version);
         versionTextView.setText(BuildConfig.VERSION_NAME);
 
@@ -63,16 +88,10 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        Log.v(TAG, "onNewIntent(...)");
-    }
-
-    @Override
     protected void onStart() {
         super.onStart();
         Log.v(TAG, "onStart()");
-        mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, null);
+        resizeTvView(null); // full screen
         mTvView.tune(mInputId, TvContract.buildChannelUri(getFirstChannelId()));
     }
 
@@ -82,8 +101,32 @@ public class MainActivity extends Activity {
         super.onStop();
     }
 
+    @Override
+    protected void onDestroy() {
+        Log.v(TAG, "onDestroy()");
+        PlayerService.getInstance().removeListener(mPlayerServiceListener);
+        PlayerService.getInstance().terminate(this);
+        super.onDestroy();
+    }
+
+    private void resizeTvView(@Nullable Rect rect) {
+        Log.v(TAG, "resizeVideoInternal(...)  " + rect);
+        if (mPlayerState != null && mPlayerState.equals(
+                PlayerState.PREPARED,
+                PlayerState.STARTED,
+                PlayerState.STOPPED,
+                PlayerState.PAUSED,
+                PlayerState.PLAYBACK_COMPLETED)) {
+            mHandler.sendMessage(MessageHandler.RESIZE_TV_VIEW, rect);
+        } else {
+            synchronized (mLock) {
+                mPendingTvViewSizeRect = rect;
+            }
+        }
+    }
+
     private void resizeTvViewInternal(@Nullable Rect rect) {
-        Log.e(TAG, "resizeVideoInternal(...)  " + rect);
+        Log.v(TAG, "resizeVideoInternal(...)  " + rect);
 
         ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) mTvView.getLayoutParams();
 
